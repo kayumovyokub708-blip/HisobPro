@@ -1,0 +1,362 @@
+// HisobPro Database Schema
+// Retail Management & POS System for Tajikistan
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH        // Нақд
+  CARD        // Корти бонкӣ
+  QR
+  MIXED       // Омехта
+}
+
+enum InventoryOperation {
+  SALE        // Фурӯш
+  RECEIVE     // Қабул
+  RETURN      // Баргардонидан
+  ADJUSTMENT  // Ислоҳ
+  DESTROYED   // Нобудшуда
+}
+
+enum Unit {
+  PIECE   // дона
+  KG
+  GRAM
+  LITER
+  METER
+  BOX     // қуттӣ
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         Role     @default(CASHIER)
+  status       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sales            Sale[]
+  expenses         Expense[]
+  inventoryMoves   InventoryMovement[]
+  activityLogs     ActivityLog[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  address       String?
+  notes         String?
+  debt          Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  products  Product[]
+  purchases Purchase[]
+
+  @@map("suppliers")
+}
+
+model Product {
+  id             String    @id @default(cuid())
+  name           String
+  sku            String?   @unique
+  barcode        String?   @unique
+  brand          String?
+  purchasePrice  Decimal   @db.Decimal(12, 2)
+  sellingPrice   Decimal   @db.Decimal(12, 2)
+  quantity       Decimal   @default(0) @db.Decimal(12, 3)
+  minStock       Decimal   @default(0) @db.Decimal(12, 3)
+  unit           Unit      @default(PIECE)
+  expirationDate DateTime?
+  imageUrl       String?
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  saleItems          SaleItem[]
+  purchaseItems      PurchaseItem[]
+  inventoryMoves     InventoryMovement[]
+  returnItems        ReturnItem[]
+
+  @@index([name])
+  @@index([barcode])
+  @@index([sku])
+  @@map("products")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?
+  address       String?
+  notes         String?
+  totalPurchases Decimal @default(0) @db.Decimal(12, 2)
+  debt          Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sales     Sale[]
+  debts     CustomerDebt[]
+  payments  CustomerPayment[]
+  returns   Return[]
+
+  @@index([phone])
+  @@index([name])
+  @@map("customers")
+}
+
+model CustomerDebt {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  remaining   Decimal  @db.Decimal(12, 2)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  payments CustomerPayment[]
+
+  @@map("customer_debts")
+}
+
+model CustomerPayment {
+  id        String   @id @default(cuid())
+  amount    Decimal  @db.Decimal(12, 2)
+  method    PaymentMethod @default(CASH)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  debtId String?
+  debt   CustomerDebt? @relation(fields: [debtId], references: [id])
+
+  @@map("customer_payments")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  receiptNumber String        @unique
+  subtotal      Decimal       @db.Decimal(12, 2)
+  discount      Decimal       @default(0) @db.Decimal(12, 2)
+  total         Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  items   SaleItem[]
+  returns Return[]
+
+  @@index([createdAt])
+  @@index([receiptNumber])
+  @@map("sales")
+}
+
+model SaleItem {
+  id       String  @id @default(cuid())
+  quantity Decimal @db.Decimal(12, 3)
+  price    Decimal @db.Decimal(12, 2)
+  discount Decimal @default(0) @db.Decimal(12, 2)
+  total    Decimal @db.Decimal(12, 2)
+
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  total       Decimal  @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  items PurchaseItem[]
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id            String  @id @default(cuid())
+  quantity      Decimal @db.Decimal(12, 3)
+  purchasePrice Decimal @db.Decimal(12, 2)
+  total         Decimal @db.Decimal(12, 2)
+
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("purchase_items")
+}
+
+model InventoryMovement {
+  id            String             @id @default(cuid())
+  operation     InventoryOperation
+  quantity      Decimal            @db.Decimal(12, 3)
+  previousStock Decimal            @db.Decimal(12, 3)
+  newStock      Decimal            @db.Decimal(12, 3)
+  notes         String?
+  createdAt     DateTime           @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([productId, createdAt])
+  @@map("inventory_movements")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?
+  paymentMethod PaymentMethod @default(CASH)
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([date])
+  @@index([category])
+  @@map("expenses")
+}
+
+model Return {
+  id          String   @id @default(cuid())
+  totalRefund Decimal  @db.Decimal(12, 2)
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  items ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id       String  @id @default(cuid())
+  quantity Decimal @db.Decimal(12, 3)
+  price    Decimal @db.Decimal(12, 2)
+  total    Decimal @db.Decimal(12, 2)
+
+  returnId String
+  return   Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("return_items")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([isRead, createdAt])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String
+  object    String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model StoreSettings {
+  id              String  @id @default("default")
+  storeName       String  @default("HisobPro")
+  phone           String?
+  address         String?
+  logoUrl         String?
+  currency        String  @default("TJS")
+  currencySymbol  String  @default("сомонӣ")
+  receiptFooter   String  @default("Ташаккур барои харид!")
+  language        String  @default("tg")
+  theme           String  @default("light")
+  allowNegativeStock Boolean @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@map("store_settings")
+}
