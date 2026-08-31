@@ -35,11 +35,12 @@ export async function getProducts(params?: {
 
   const where: any = {};
   if (params?.search) {
+    const q = params.search;
     where.OR = [
-      { name: { contains: params.search, mode: "insensitive" } },
-      { barcode: { contains: params.search, mode: "insensitive" } },
-      { sku: { contains: params.search, mode: "insensitive" } },
-      { brand: { contains: params.search, mode: "insensitive" } },
+      { name: { contains: q } },
+      { barcode: { contains: q } },
+      { sku: { contains: q } },
+      { brand: { contains: q } },
     ];
   }
   if (params?.categoryId) {
