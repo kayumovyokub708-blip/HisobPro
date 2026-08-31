@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,15 +17,25 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Placeholder — real auth will be connected later
-    setTimeout(() => {
-      if (username === "admin" && password === "admin123") {
-        window.location.href = "/dashboard";
-      } else {
+    try {
+      const result = await signIn("credentials", {
+        username,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
         setError("Номи корбар ё рамз нодуруст аст.");
         setLoading(false);
+        return;
       }
-    }, 800);
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Хатогӣ рӯй дод. Лутфан дубора кӯшиш кунед.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,7 +49,7 @@ export default function LoginPage() {
             HisobPro
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Ба система дароед
+            Ҳамаи ҳисобҳои магазин — дар як ҷо
           </p>
         </div>
 
@@ -62,6 +75,7 @@ export default function LoginPage() {
               placeholder="admin"
               required
               autoFocus
+              autoComplete="username"
             />
           </div>
 
@@ -76,6 +90,7 @@ export default function LoginPage() {
               className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
           </div>
 
