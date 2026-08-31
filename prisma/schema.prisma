@@ -1,12 +1,13 @@
 // HisobPro Database Schema
 // Retail Management & POS System for Tajikistan
+// Using SQLite for simple local development
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -17,27 +18,27 @@ enum Role {
 }
 
 enum PaymentMethod {
-  CASH        // Нақд
-  CARD        // Корти бонкӣ
+  CASH
+  CARD
   QR
-  MIXED       // Омехта
+  MIXED
 }
 
 enum InventoryOperation {
-  SALE        // Фурӯш
-  RECEIVE     // Қабул
-  RETURN      // Баргардонидан
-  ADJUSTMENT  // Ислоҳ
-  DESTROYED   // Нобудшуда
+  SALE
+  RECEIVE
+  RETURN
+  ADJUSTMENT
+  DESTROYED
 }
 
 enum Unit {
-  PIECE   // дона
+  PIECE
   KG
   GRAM
   LITER
   METER
-  BOX     // қуттӣ
+  BOX
 }
 
 model User {
@@ -52,21 +53,21 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sales            Sale[]
-  expenses         Expense[]
-  inventoryMoves   InventoryMovement[]
-  activityLogs     ActivityLog[]
-  notifications    Notification[]
+  sales          Sale[]
+  expenses       Expense[]
+  inventoryMoves InventoryMovement[]
+  activityLogs   ActivityLog[]
+  notifications  Notification[]
 
   @@map("users")
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   products Product[]
 
@@ -80,7 +81,7 @@ model Supplier {
   phone         String?
   address       String?
   notes         String?
-  debt          Decimal  @default(0) @db.Decimal(12, 2)
+  debt          Float    @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -96,10 +97,10 @@ model Product {
   sku            String?   @unique
   barcode        String?   @unique
   brand          String?
-  purchasePrice  Decimal   @db.Decimal(12, 2)
-  sellingPrice   Decimal   @db.Decimal(12, 2)
-  quantity       Decimal   @default(0) @db.Decimal(12, 3)
-  minStock       Decimal   @default(0) @db.Decimal(12, 3)
+  purchasePrice  Float
+  sellingPrice   Float
+  quantity       Float     @default(0)
+  minStock       Float     @default(0)
   unit           Unit      @default(PIECE)
   expirationDate DateTime?
   imageUrl       String?
@@ -113,10 +114,10 @@ model Product {
   supplierId String?
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
-  saleItems          SaleItem[]
-  purchaseItems      PurchaseItem[]
-  inventoryMoves     InventoryMovement[]
-  returnItems        ReturnItem[]
+  saleItems      SaleItem[]
+  purchaseItems  PurchaseItem[]
+  inventoryMoves InventoryMovement[]
+  returnItems    ReturnItem[]
 
   @@index([name])
   @@index([barcode])
@@ -125,20 +126,20 @@ model Product {
 }
 
 model Customer {
-  id            String   @id @default(cuid())
-  name          String
-  phone         String?
-  address       String?
-  notes         String?
-  totalPurchases Decimal @default(0) @db.Decimal(12, 2)
-  debt          Decimal  @default(0) @db.Decimal(12, 2)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  address        String?
+  notes          String?
+  totalPurchases Float    @default(0)
+  debt           Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  sales     Sale[]
-  debts     CustomerDebt[]
-  payments  CustomerPayment[]
-  returns   Return[]
+  sales    Sale[]
+  debts    CustomerDebt[]
+  payments CustomerPayment[]
+  returns  Return[]
 
   @@index([phone])
   @@index([name])
@@ -147,8 +148,8 @@ model Customer {
 
 model CustomerDebt {
   id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(12, 2)
-  remaining   Decimal  @db.Decimal(12, 2)
+  amount      Float
+  remaining   Float
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -162,11 +163,11 @@ model CustomerDebt {
 }
 
 model CustomerPayment {
-  id        String   @id @default(cuid())
-  amount    Decimal  @db.Decimal(12, 2)
+  id        String        @id @default(cuid())
+  amount    Float
   method    PaymentMethod @default(CASH)
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id])
@@ -180,15 +181,15 @@ model CustomerPayment {
 model Sale {
   id            String        @id @default(cuid())
   receiptNumber String        @unique
-  subtotal      Decimal       @db.Decimal(12, 2)
-  discount      Decimal       @default(0) @db.Decimal(12, 2)
-  total         Decimal       @db.Decimal(12, 2)
+  subtotal      Float
+  discount      Float         @default(0)
+  total         Float
   paymentMethod PaymentMethod
   notes         String?
   createdAt     DateTime      @default(now())
 
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id])
@@ -202,14 +203,14 @@ model Sale {
 }
 
 model SaleItem {
-  id       String  @id @default(cuid())
-  quantity Decimal @db.Decimal(12, 3)
-  price    Decimal @db.Decimal(12, 2)
-  discount Decimal @default(0) @db.Decimal(12, 2)
-  total    Decimal @db.Decimal(12, 2)
+  id       String @id @default(cuid())
+  quantity Float
+  price    Float
+  discount Float  @default(0)
+  total    Float
 
-  saleId    String
-  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
@@ -218,10 +219,10 @@ model SaleItem {
 }
 
 model Purchase {
-  id          String   @id @default(cuid())
-  total       Decimal  @db.Decimal(12, 2)
-  notes       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  total     Float
+  notes     String?
+  createdAt DateTime @default(now())
 
   supplierId String
   supplier   Supplier @relation(fields: [supplierId], references: [id])
@@ -232,10 +233,10 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id            String  @id @default(cuid())
-  quantity      Decimal @db.Decimal(12, 3)
-  purchasePrice Decimal @db.Decimal(12, 2)
-  total         Decimal @db.Decimal(12, 2)
+  id            String @id @default(cuid())
+  quantity      Float
+  purchasePrice Float
+  total         Float
 
   purchaseId String
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
@@ -249,9 +250,9 @@ model PurchaseItem {
 model InventoryMovement {
   id            String             @id @default(cuid())
   operation     InventoryOperation
-  quantity      Decimal            @db.Decimal(12, 3)
-  previousStock Decimal            @db.Decimal(12, 3)
-  newStock      Decimal            @db.Decimal(12, 3)
+  quantity      Float
+  previousStock Float
+  newStock      Float
   notes         String?
   createdAt     DateTime           @default(now())
 
@@ -266,13 +267,13 @@ model InventoryMovement {
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  category    String
-  amount      Decimal  @db.Decimal(12, 2)
-  description String?
+  id            String        @id @default(cuid())
+  category      String
+  amount        Float
+  description   String?
   paymentMethod PaymentMethod @default(CASH)
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
@@ -284,7 +285,7 @@ model Expense {
 
 model Return {
   id          String   @id @default(cuid())
-  totalRefund Decimal  @db.Decimal(12, 2)
+  totalRefund Float
   reason      String?
   createdAt   DateTime @default(now())
 
@@ -300,10 +301,10 @@ model Return {
 }
 
 model ReturnItem {
-  id       String  @id @default(cuid())
-  quantity Decimal @db.Decimal(12, 3)
-  price    Decimal @db.Decimal(12, 2)
-  total    Decimal @db.Decimal(12, 2)
+  id       String @id @default(cuid())
+  quantity Float
+  price    Float
+  total    Float
 
   returnId String
   return   Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
@@ -345,18 +346,18 @@ model ActivityLog {
 }
 
 model StoreSettings {
-  id              String  @id @default("default")
-  storeName       String  @default("HisobPro")
-  phone           String?
-  address         String?
-  logoUrl         String?
-  currency        String  @default("TJS")
-  currencySymbol  String  @default("сомонӣ")
-  receiptFooter   String  @default("Ташаккур барои харид!")
-  language        String  @default("tg")
-  theme           String  @default("light")
-  allowNegativeStock Boolean @default(false)
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default("default")
+  storeName          String   @default("HisobPro")
+  phone              String?
+  address            String?
+  logoUrl            String?
+  currency           String   @default("TJS")
+  currencySymbol     String   @default("сомонӣ")
+  receiptFooter      String   @default("Ташаккур барои харид!")
+  language           String   @default("tg")
+  theme              String   @default("light")
+  allowNegativeStock Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
 
   @@map("store_settings")
 }
