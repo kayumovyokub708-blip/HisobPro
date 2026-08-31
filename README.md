@@ -2,116 +2,84 @@
 
 **Ҳамаи ҳисобҳои магазин — дар як ҷо.**
 
-HisobPro is a modern, production-ready retail management and POS system designed for small and medium-sized stores in Tajikistan.
+HisobPro — системаи замонавӣ ва production-ready барои идоракунии мағозаҳо, POS, анбор, мизоҷон, қарзҳо, хароҷот ва ҳисоботҳо (махсусан барои Тоҷикистон).
 
-## Features
+## Ҳолати ҷорӣ
 
-- 🛒 Full POS (Point of Sale) with barcode support
-- 📦 Product & Inventory management
-- 👥 Customers + Debt tracking
-- 🚚 Suppliers & Stock receiving
-- 💰 Expenses management
-- ↩️ Returns
-- 📊 Reports & Charts (real data)
-- 👤 Role-based access (Admin / Manager / Cashier)
-- 🌙 Dark / Light mode
-- 🇹🇯 Full Tajik (Cyrillic) interface
-- 📱 Fully responsive (Desktop + Mobile)
+- ✅ Архитектура + Prisma Schema (пурра)
+- ✅ Seed (маҳсулот, корбарон, категорияҳо, мизоҷон, хароҷот)
+- ✅ Authentication (NextAuth + bcrypt + JWT)
+- ✅ Login воқеӣ
+- ✅ Protected routes + Role-Based Access (Admin / Manager / Cashier)
+- ✅ Sidebar (responsive + mobile hamburger)
+- ✅ Dashboard бо маълумоти воқеӣ аз Database
+- 🔄 Products, POS, Inventory, Customers... (дар ҳоли сохташавӣ)
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15 (App Router) + TypeScript + Tailwind CSS
-- **Backend**: Next.js API Routes + Server Actions
-- **Database**: PostgreSQL + Prisma ORM
-- **Auth**: NextAuth.js (Credentials)
-- **Charts**: Recharts
-- **Icons**: Lucide React
+- Next.js 15 (App Router) + TypeScript
+- Tailwind CSS
+- PostgreSQL + Prisma ORM
+- NextAuth.js (Credentials)
+- bcryptjs, Zod, Recharts, Lucide
 
-## Getting Started
-
-### 1. Clone the repository
+## Насб
 
 ```bash
 git clone https://github.com/kayumovyokub708-blip/HisobPro.git
 cd HisobPro
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
-```
-
-### 3. Setup environment
-
-```bash
 cp .env.example .env
-```
-
-Edit `.env` and set your `DATABASE_URL` and `NEXTAUTH_SECRET`.
-
-### 4. Database setup
-
-```bash
-# Generate Prisma Client
+# DATABASE_URL ва NEXTAUTH_SECRET-ро танзим кунед
 npm run db:generate
-
-# Push schema to database
 npm run db:push
-
-# (Optional) Seed demo data
 npm run db:seed
-```
-
-### 5. Run development server
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Кушоед: http://localhost:3000
 
-### Demo credentials (after seeding)
+### Credential-ҳои демо
 
-- Username: `admin`
-- Password: `admin123`
+| Нақш     | Username | Password    |
+|----------|----------|-------------|
+| Admin    | admin    | admin123    |
+| Manager  | manager  | manager123  |
+| Cashier  | cashier  | cashier123  |
 
-## Project Structure
+## Сохтор
 
 ```
-HisobPro/
-├── prisma/
-│   ├── schema.prisma      # Full database schema
-│   └── seed.ts            # Demo data
-├── src/
-│   ├── app/               # Next.js App Router pages
-│   ├── components/        # Reusable UI components
-│   ├── lib/               # Utilities, Prisma client, auth
-│   └── types/             # TypeScript types
-├── public/
-└── ...
+src/
+├── app/
+│   ├── (dashboard)/     # Protected pages + layout
+│   ├── api/auth/        # NextAuth
+│   └── login/
+├── components/
+│   ├── layout/Sidebar.tsx
+│   └── providers.tsx
+├── lib/
+│   ├── auth.ts
+│   ├── prisma.ts
+│   └── utils.ts
+└── types/
+prisma/
+├── schema.prisma
+└── seed.ts
 ```
 
-## Development Roadmap
+## Нақшаи минбаъда
 
-1. ✅ Project architecture & database schema
-2. 🔄 Authentication
-3. 🔄 Main layout + Dashboard
-4. 🔄 Products & Categories
-5. 🔄 Inventory
-6. 🔄 POS
-7. 🔄 Customers & Debts
-8. 🔄 Suppliers & Purchases
-9. 🔄 Expenses & Returns
-10. 🔄 Reports & Charts
-11. 🔄 Employees & Permissions
-12. 🔄 Notifications & Activity Log
-13. 🔄 Settings
-14. 🔄 Testing & Optimization
-
-## License
-
-Private / All rights reserved.
+1. Products CRUD + Categories
+2. POS (сабад, barcode, пардохт, чек)
+3. Inventory movements
+4. Customers + Debt
+5. Suppliers + Purchases
+6. Expenses & Returns
+7. Reports + Charts
+8. Notifications + Activity Log
+9. Settings + Dark Mode
+10. Testing + Production polish
 
 ---
 
